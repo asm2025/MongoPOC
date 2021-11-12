@@ -7,18 +7,20 @@ using AutoMapper.QueryableExtensions;
 using essentialMix.Core.Web.Controllers;
 using essentialMix.Extensions;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoPOC.Data;
 using MongoPOC.Model;
 using MongoPOC.Model.DTO;
 
 namespace MongoPOC.API.Controllers
 {
-	[Authorize(AuthenticationSchemes = Constants.Authentication.AuthenticationSchemes)]
+	[Authorize(AuthenticationSchemes = OpenIdConnectDefaults.AuthenticationScheme)]
 	[Route("[controller]")]
 	public class RolesController : ApiController
 	{
@@ -26,10 +28,10 @@ namespace MongoPOC.API.Controllers
 		private readonly IMapper _mapper;
 
 		/// <inheritdoc />
-		public RolesController([NotNull] RoleManager<Role> roleManager, IMapper mapper, [NotNull] IConfiguration configuration, ILogger<UsersController> logger)
+		public RolesController([NotNull] IMongoPOCContext context, IMapper mapper, [NotNull] IConfiguration configuration, [NotNull] ILogger<UsersController> logger)
 			: base(configuration, logger)
 		{
-			_roleManager = roleManager;
+			_roleManager = context.RoleManager;
 			_mapper = mapper;
 		}
 

@@ -26,12 +26,11 @@ namespace MongoPOC.Data.Fakers
 			});
 			base.RuleFor(e => e.LastName, f => f.Person.LastName);
 			base.RuleFor(e => e.Email, (f, e) => f.Internet.ExampleEmail(e.FirstName, e.LastName));
-			base.RuleFor(e => e.KnownAs, (_, e) => e.FirstName);
+			base.RuleFor(e => e.Name, (_, e) => e.FirstName);
 			base.RuleFor(e => e.UserName, (f, e) => f.Internet.UserName(e.FirstName, e.LastName));
 			base.RuleFor(e => e.City, f => f.Address.City());
 			base.RuleFor(e => e.Country, f => f.Address.Country());
-			base.RuleFor(e => e.Created, f => f.Date.Past(RandomHelper.Next(1, 10)));
-			base.RuleFor(e => e.DateOfBirth, f => f.Date.Past(RandomHelper.Next(16, 60), DateTime.Now.AddYears(-18)));
+			base.RuleFor(e => e.BirthDate, f => f.Date.Past(RandomHelper.Next(16, 60), DateTime.Now.AddYears(-18)));
 			base.RuleFor(e => e.LastActive, f => f.Date.Past());
 		}
 

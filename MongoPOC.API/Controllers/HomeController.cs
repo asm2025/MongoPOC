@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Net;
 using essentialMix.Core.Web.Controllers;
+using essentialMix.Extensions;
 using essentialMix.Web;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace MongoPOC.API.Controllers
@@ -15,7 +18,7 @@ namespace MongoPOC.API.Controllers
 	public class HomeController : ApiController
 	{
 		/// <inheritdoc />
-		public HomeController(IConfiguration configuration, ILogger logger)
+		public HomeController([NotNull] IConfiguration configuration, [NotNull] ILogger<HomeController> logger)
 			: base(configuration, logger)
 		{
 		}
@@ -23,23 +26,26 @@ namespace MongoPOC.API.Controllers
 		[HttpGet]
 		public IActionResult Index()
 		{
-			return Ok(Configuration.GetValue<string>("title"));
+			return Environment.IsDevelopment()
+						? Ok(Configuration.GetValue<string>("title"))
+						: NotFound();
 		}
 
-		[HttpGet("[action]")]
+		[Route("[action]/{id:int?}")]
 		[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-		public IActionResult Error()
+		public IActionResult Error(int? id)
 		{
-			Exception exception = HttpContext?.Features.Get<IExceptionHandlerPathFeature>().Error;
-			if (exception == null) return Problem("Unknown error.", null, (int)HttpStatusCode.InternalServerError);
-
+			Exception exception = HttpContext?.Features.Get<IExceptionHandlerPathFeature>()?.Error;
+			if (exception != null) Logger.LogError(exception.CollectMessages());
+			id ??= (int)HttpStatusCode.InternalServerError;
+			
 			ResponseStatus responseStatus = new ResponseStatus
 			{
-				StatusCode = (HttpStatusCode) HttpContext.Response.StatusCode,
+				StatusCode = (HttpStatusCode)id,
 				Exception = exception
 			};
 
-			return Problem(responseStatus.ToString(), null, HttpContext.Response.StatusCode);
+			return Problem(responseStatus.ToString(), null, id);
 		}
 	}
 }

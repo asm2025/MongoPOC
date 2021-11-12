@@ -1,13 +1,11 @@
 using System;
+using System.Linq;
 using essentialMix.Core.Web.Middleware;
 using essentialMix.Extensions;
 using essentialMix.Helpers;
 using essentialMix.Newtonsoft.Helpers;
 using essentialMix.Newtonsoft.Serialization;
 using JetBrains.Annotations;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -19,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
+using MongoPOC.API.Extensions;
 using MongoPOC.Data;
 using MongoPOC.Data.Settings;
 using MongoPOC.Model;
@@ -27,7 +25,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Swashbuckle.AspNetCore.Filters;
 using Serilog;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace MongoPOC.API
 {
@@ -39,14 +36,10 @@ namespace MongoPOC.API
 		[NotNull]
 		private readonly IConfiguration _configuration;
 
-		[NotNull]
-		private readonly ILogger _logger;
-
-		public Startup([NotNull] IHostEnvironment environment, [NotNull] IConfiguration configuration, [NotNull] ILogger<Startup> logger)
+		public Startup([NotNull] IHostEnvironment environment, [NotNull] IConfiguration configuration)
 		{
 			_environment = environment;
 			_configuration = configuration;
-			_logger = logger;
 		}
 
 		// This method gets called by the runtime. Use this method to add services to the container.
@@ -75,7 +68,9 @@ namespace MongoPOC.API
 				.AddSwaggerGen(options =>
 				{
 					options.Setup(_configuration, _environment)
-							.AddJwtBearerSecurity();
+							.AddOpenIdConnectSecurity(identityServerSettings.AuthorizationUrl, 
+													identityServerSettings.TokenUrl, 
+													identityServerSettings.ApiScopes.ToDictionary(e => e.Name, e => e.Description));
 					//options.OperationFilter<FormFileFilter>();
 					options.ExampleFilters();
 				})
@@ -110,55 +105,40 @@ namespace MongoPOC.API
 				.AddRoleValidator<RoleValidator<Role>>()
 				.AddSignInManager<SignInManager<User>>()
 				.AddDefaultTokenProviders();
-			services.AddSingleton<BookService>();
-			
-			// Identity
-			IIdentityServerBuilder identityServerBuilder = services.AddIdentityServer(options =>
-																	{
-																		options.Events.RaiseErrorEvents = true;
-																		options.Events.RaiseFailureEvents = true;
-																		options.Events.RaiseSuccessEvents = true;
-																	})
-																	.AddAspNetIdentity<User>()
-																	.AddInMemoryPersistedGrants()
-																	.AddInMemoryApiScopes(identityServerSettings.ApiScopes)
-																	.AddInMemoryApiResources(identityServerSettings.ApiResources)
-																	.AddInMemoryClients(identityServerSettings.Clients)
-																	.AddInMemoryIdentityResources(identityServerSettings.IdentityResources);
-			if (_environment.IsDevelopment()) identityServerBuilder.AddDeveloperSigningCredential();
+			services
+				.AddScoped<IMongoPOCContext, MongoPOCContext>()
+				.AddScoped<BookService>()
+				// Identity
+				.AddIdentityServer(options =>
+				{
+					options.Events.RaiseErrorEvents = true;
+					options.Events.RaiseFailureEvents = true;
+					options.Events.RaiseInformationEvents = true;
+					options.Events.RaiseSuccessEvents = true;
+				})
+				.AddAspNetIdentity<User>()
+				.AddInMemoryPersistedGrants()
+				.AddInMemoryApiScopes(identityServerSettings.ApiScopes)
+				.AddInMemoryApiResources(identityServerSettings.ApiResources)
+				.AddInMemoryIdentityResources(identityServerSettings.IdentityResources)
+				.AddInMemoryClients(identityServerSettings.Clients)
+				.AddDeveloperSigningCredential();
 
 			// Authentication
-			services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme);
 			services
-				.AddAuthentication(options =>
-				{
-					options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-					options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-				})
+				.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
 				.AddCookie(options =>
 				{
 					options.SlidingExpiration = true;
-					options.LoginPath = "/users/login";
-					options.LogoutPath = "/users/logout";
-					options.ExpireTimeSpan = TimeSpan.FromMinutes(_configuration.GetValue("jwt:timeout", 20).NotBelow(5));
+					options.LoginPath = "/connect/authorize";
+					options.LogoutPath = "/connect/logout";
+					options.ExpireTimeSpan = TimeSpan.FromMinutes(identityServerSettings.Timeout);
 				})
-				.AddJwtBearer(options =>
+				.AddIdentityServerAuthentication(OpenIdConnectDefaults.AuthenticationScheme, option =>
 				{
-					SecurityKey signingKey = SecurityKeyHelper.CreateSymmetricKey(_configuration.GetValue<string>("jwt:signingKey"), 256);
-					//SecurityKey decryptionKey = SecurityKeyHelper.CreateSymmetricKey(_configuration.GetValue<string>("jwt:encryptionKey"), 256);
-					options.Setup(signingKey, /*decryptionKey, */_configuration, _environment.IsDevelopment());
-				})
-				.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
-				{
-					options.Authority = _configuration.GetValue<string>("jwt:authority").ToNullIfEmpty();
-					options.ClientId = "asm";
-					options.ResponseType = "code";
-					options.Scope.Add("openid");
-					options.Scope.Add("profile");
-					options.Scope.Add("fullaccess");
-					options.Scope.Add("roles");
-					options.ClaimActions.MapUniqueJsonKey("role", "role");
-					options.SaveTokens = true;
+					option.ApiName = "api";
+					option.Authority = identityServerSettings.Authority;
+					option.ApiSecret = "endc@m+Y8hZCW&MAEEb5RY2?AeE75d3?";
 				});
 
 			// Authorization
@@ -194,37 +174,39 @@ namespace MongoPOC.API
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
 		public void Configure([NotNull] IApplicationBuilder app, [NotNull] IWebHostEnvironment env)
 		{
-			if (env.IsDevelopment())
-				app.UseDefaultExceptionDelegate(_logger);
-			else if (env.IsProduction() || env.IsStaging())
-				app.UseExceptionHandler("/Error");
-
+			app.UseExceptionHandler("/error");
 			if (!env.IsDevelopment() || _configuration.GetValue<bool>("useSSL")) app.UseHsts();
-
 			app.UseHttpsRedirection()
 				.UseForwardedHeaders()
 				.UseCultureHandler()
-				.UseSerilogRequestLogging()
-				.UseSwagger(config => config.RouteTemplate = _configuration.GetValue<string>("swagger:template"))
-				.UseSwaggerUI(config =>
-				{
-					config.SwaggerEndpoint(_configuration.GetValue<string>("swagger:ui"), _configuration.GetValue("title", _environment.ApplicationName));
-					config.AsStartPage();
-				})
-				.UseDefaultFiles()
-				.UseStaticFiles(new StaticFileOptions
-				{
-					FileProvider = new PhysicalFileProvider(AssemblyHelper.GetEntryAssembly().GetDirectoryPath())
-				})
-				.UseCookiePolicy(new CookiePolicyOptions
+				.UseSerilogRequestLogging();
+
+			if (env.IsDevelopment())
+			{
+				app.UseSwagger(options => options.RouteTemplate = _configuration.GetValue<string>("swagger:template"))
+					.UseSwaggerUI(options =>
+					{
+						options.SwaggerEndpoint(_configuration.GetValue<string>("swagger:ui"), _configuration.GetValue("title", _environment.ApplicationName));
+						options.OAuthUsePkce();
+						options.AsStartPage();
+					});
+			}
+
+			app.UseCookiePolicy(new CookiePolicyOptions
 				{
 					MinimumSameSitePolicy = SameSiteMode.None,
 					Secure = CookieSecurePolicy.SameAsRequest
 				})
+				.UseStaticFiles(new StaticFileOptions
+				{
+					FileProvider = new PhysicalFileProvider(AssemblyHelper.GetEntryAssembly().GetDirectoryPath())
+				})
 				.UseRouting()
 				.UseCors()
+				.UseIdentityServer()
 				.UseAuthentication()
 				.UseAuthorization()
+				.UseDefaultFiles()
 				.UseEndpoints(endpoints =>
 				{
 					endpoints.MapControllers();

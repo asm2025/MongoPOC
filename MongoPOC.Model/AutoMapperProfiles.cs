@@ -12,7 +12,7 @@ namespace MongoPOC.Model
 			CreateMap<UserToRegister, User>().ReverseMap();
 			CreateMap<UserToUpdate, User>().ReverseMap();
 			CreateMap<User, UserForLoginDisplay>()
-				.ForMember(e => e.Age, opt => opt.MapFrom(e => DateTime.Today.Years(e.DateOfBirth)));
+				.ForMember(e => e.Age, opt => opt.MapFrom(e => DateTime.Today.Years(e.BirthDate)));
 			CreateMap<User, UserForList>()
 				.IncludeBase<User, UserForLoginDisplay>();
 			CreateMap<User, UserForDetails>()

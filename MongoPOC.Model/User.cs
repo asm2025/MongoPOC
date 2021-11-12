@@ -16,7 +16,7 @@ namespace MongoPOC.Model
 	    public const int AGE_MAX = 99;
 
 		private string _firstName;
-		private string _knownAs;
+		private string _name;
 		private string _lastName;
 
 		/// <inheritdoc />
@@ -53,22 +53,21 @@ namespace MongoPOC.Model
 		}
 
 		[StringLength(255)]
-		public string KnownAs
+		public string Name
 		{
-			get => _knownAs ?? FirstName; 
-			set => _knownAs = value.ToNullIfEmpty();
+			get => _name ?? FirstName; 
+			set => _name = value.ToNullIfEmpty();
 		}
 
 		public Genders Gender { get; set; }
-        public DateTime DateOfBirth { get; set; }
+        public DateTime BirthDate { get; set; }
         
         [StringLength(255)]
 		public string City { get; set; }
         
         [StringLength(255)]
 		public string Country { get; set; }
-        public DateTime Created { get; set; }
-        public DateTime Modified { get; set; }
+        public DateTime UpdatedOn { get; set; }
         public DateTime LastActive { get; set; }
 	}
 }

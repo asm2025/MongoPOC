@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using essentialMix.Core.Web.Controllers;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -16,7 +16,7 @@ using MongoPOC.Model.Extensions;
 
 namespace MongoPOC.API.Controllers
 {
-	[Authorize(AuthenticationSchemes = Constants.Authentication.AuthenticationSchemes)]
+	[Authorize(AuthenticationSchemes = OpenIdConnectDefaults.AuthenticationScheme)]
 	[Route("[controller]")]
 	public class BooksController : ApiController
 	{
@@ -57,8 +57,8 @@ namespace MongoPOC.API.Controllers
 			}
 		}
 
-		[HttpGet("{id:guid}")]
-		public async Task<IActionResult> Get([FromRoute] Guid id)
+		[HttpGet("{id:length(128)}")]
+		public async Task<IActionResult> Get([FromRoute][NotNull] string id)
 		{
 			Book book = await _service.GetAsync(id);
 			return book == null
@@ -66,8 +66,8 @@ namespace MongoPOC.API.Controllers
 						: Ok(book);
 		}
 
-		[HttpPut("[action]/{id:guid}")]
-		public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody][NotNull] BookToAdd bookToAdd)
+		[HttpPut("[action]/{id:length(128)}")]
+		public async Task<IActionResult> Update([FromRoute][NotNull] string id, [FromBody][NotNull] BookToAdd bookToAdd)
 		{
 			if (!ModelState.IsValid) return ValidationProblem();
 
@@ -78,8 +78,8 @@ namespace MongoPOC.API.Controllers
 			return Ok(book);
 		}
 
-		[HttpDelete("[action]/{id:guid}")]
-		public async Task<IActionResult> Delete([FromRoute] Guid id)
+		[HttpDelete("[action]/{id:length(128)}")]
+		public async Task<IActionResult> Delete([FromRoute][NotNull] string id)
 		{
 			Book book = await _service.GetAsync(id);
 			if (book == null) return NotFound(id);

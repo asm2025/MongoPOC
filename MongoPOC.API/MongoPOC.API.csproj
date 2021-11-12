@@ -18,9 +18,9 @@
 		<PackageReference Include="essentialMix.Logging" Version="12.32.0" />
 		<PackageReference Include="essentialMix.Newtonsoft" Version="12.32.0" />
 		<PackageReference Include="IdentityServer4" Version="4.1.2" />
+		<PackageReference Include="IdentityServer4.AccessTokenValidation" Version="3.0.1" />
 		<PackageReference Include="IdentityServer4.AspNetIdentity" Version="4.1.2" />
 		<PackageReference Include="JetBrains.Annotations" Version="2021.3.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.12" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="5.0.12" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.9" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.12" />

@@ -4,25 +4,17 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using MongoDB.Driver;
-using MongoPOC.Data.Settings;
 using MongoPOC.Model;
 
 namespace MongoPOC.Data
 {
 	public abstract class MongoDbService<T, TKey>
 		where T : IEntity<TKey>
-		where TKey : IEquatable<TKey>
+		where TKey : IComparable<TKey>, IEquatable<TKey>
 	{
-		private readonly string _collectionName;
-
-		private IMongoClient _client;
-		private IMongoDatabase _database;
-		private IMongoCollection<T> _collection;
-
-		protected MongoDbService([NotNull] IDbConfig configuration, [NotNull] string collectionName)
+		protected MongoDbService([NotNull] IMongoCollection<T> collection)
 		{
-			Configuration = configuration;
-			_collectionName = collectionName;
+			Collection = collection;
 		}
 
 		[NotNull]
@@ -105,12 +97,6 @@ namespace MongoPOC.Data
 		}
 
 		[NotNull]
-		protected IDbConfig Configuration { get; }
-		[NotNull]
-		protected IMongoClient Client => _client ??= new MongoClient(Configuration.ConnectionString);
-		[NotNull]
-		protected IMongoDatabase Database => _database ??= Client.GetDatabase(Configuration.Database);
-
-		protected IMongoCollection<T> Collection => _collection ??= Database.GetCollection<T>(_collectionName);
+		protected IMongoCollection<T> Collection { get; }
 	}
 }

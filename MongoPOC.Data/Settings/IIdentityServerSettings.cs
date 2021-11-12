@@ -5,9 +5,12 @@ namespace MongoPOC.Data.Settings
 {
 	public interface IIdentityServerSettings
 	{
-		IReadOnlyCollection<ApiScope> ApiScopes { get; init; }
-		IReadOnlyCollection<ApiResource> ApiResources { get; init; }
-		IReadOnlyCollection<Client> Clients { get; init; }
+		string Authority { get; }
+		int Timeout { get; }
+		int RefreshInterval { get; }
+		IReadOnlyCollection<ApiScope> ApiScopes { get; }
+		IReadOnlyCollection<ApiResource> ApiResources { get; }
+		IReadOnlyCollection<Client> Clients { get; }
 		IReadOnlyCollection<IdentityResource> IdentityResources { get; }
 	}
 }

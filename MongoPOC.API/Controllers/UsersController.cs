@@ -8,18 +8,20 @@ using AutoMapper.QueryableExtensions;
 using essentialMix.Core.Web.Controllers;
 using essentialMix.Extensions;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoPOC.Data;
 using MongoPOC.Model;
 using MongoPOC.Model.DTO;
 
 namespace MongoPOC.API.Controllers
 {
-	[Authorize(AuthenticationSchemes = Constants.Authentication.AuthenticationSchemes)]
+	[Authorize(AuthenticationSchemes =OpenIdConnectDefaults.AuthenticationScheme)]
 	[Route("[controller]")]
 	public class UsersController : ApiController
 	{
@@ -27,10 +29,10 @@ namespace MongoPOC.API.Controllers
 		private readonly IMapper _mapper;
 
 		/// <inheritdoc />
-		public UsersController([NotNull] UserManager<User> userManager, [NotNull] IMapper mapper, [NotNull] IConfiguration configuration, ILogger<UsersController> logger)
+		public UsersController([NotNull] IMongoPOCContext context, [NotNull] IMapper mapper, [NotNull] IConfiguration configuration, [NotNull] ILogger<UsersController> logger)
 			: base(configuration, logger)
 		{
-			_userManager = userManager;
+			_userManager = context.UserManager;
 			_mapper = mapper;
 		}
 
@@ -56,8 +58,7 @@ namespace MongoPOC.API.Controllers
 			if (!ModelState.IsValid) return ValidationProblem();
 
 			User user = _mapper.Map<User>(userParams);
-			user.Created = DateTime.UtcNow;
-			user.Modified = user.Created;
+			user.UpdatedOn = DateTime.UtcNow;
 
 			IdentityResult result = string.IsNullOrEmpty(userParams.Password)
 										? await _userManager.CreateAsync(user)
