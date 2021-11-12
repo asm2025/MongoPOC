@@ -1,8 +1,6 @@
 using System;
 using AutoMapper;
-using essentialMix.Data.Patterns.Parameters;
 using essentialMix.Extensions;
-using essentialMix.Patterns.Pagination;
 using MongoPOC.Model.DTO;
 
 namespace MongoPOC.Model
@@ -11,9 +9,6 @@ namespace MongoPOC.Model
 	{
 		public AutoMapperProfiles()
 		{
-			CreateMap<SortablePagination, ListSettings>().ReverseMap();
-			CreateMap<UserList, ListSettings>().ReverseMap();
-
 			CreateMap<UserToRegister, User>().ReverseMap();
 			CreateMap<UserToUpdate, User>().ReverseMap();
 			CreateMap<User, UserForLoginDisplay>()
@@ -25,7 +20,10 @@ namespace MongoPOC.Model
 			CreateMap<User, UserForSerialization>()
 				.IncludeBase<User, UserForList>();
 
-			CreateMap<Role, RoleForSerialization>();
+			CreateMap<Role, RoleForList>();
+
+			CreateMap<BookToAdd, Book>().ReverseMap();
+			CreateMap<Book, BookForList>();
 		}
 	}
 }

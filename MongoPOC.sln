@@ -7,11 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoPOC.API", "MongoPOC.AP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoPOC.Model", "MongoPOC.Model\MongoPOC.Model.csproj", "{2AB245CA-046F-4215-8333-0A1D92C9EC4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoPOC.Data", "MongoPOC.Data\MongoPOC.Data.csproj", "{436A7C3B-78A0-4696-B7A8-62EF567C3DCE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoPOC.Identity", "MongoPOC.Identity\MongoPOC.Identity.csproj", "{8AE947DD-ECE8-4881-8DAD-7CEBAC532D0B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoPOC.UI", "MongoPOC.UI\MongoPOC.UI.csproj", "{7D2B6BF1-60DC-496A-9FA1-D854E44823BE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoPOC.Data", "MongoPOC.Data\MongoPOC.Data.csproj", "{436A7C3B-78A0-4696-B7A8-62EF567C3DCE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,14 +27,6 @@ Global
 		{436A7C3B-78A0-4696-B7A8-62EF567C3DCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{436A7C3B-78A0-4696-B7A8-62EF567C3DCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{436A7C3B-78A0-4696-B7A8-62EF567C3DCE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8AE947DD-ECE8-4881-8DAD-7CEBAC532D0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8AE947DD-ECE8-4881-8DAD-7CEBAC532D0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8AE947DD-ECE8-4881-8DAD-7CEBAC532D0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8AE947DD-ECE8-4881-8DAD-7CEBAC532D0B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7D2B6BF1-60DC-496A-9FA1-D854E44823BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7D2B6BF1-60DC-496A-9FA1-D854E44823BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7D2B6BF1-60DC-496A-9FA1-D854E44823BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7D2B6BF1-60DC-496A-9FA1-D854E44823BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

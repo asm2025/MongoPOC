@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
@@ -13,6 +13,7 @@
     <PackageReference Include="essentialMix.Extensions.Configuration" Version="12.32.0" />
     <PackageReference Include="essentialMix.Logging" Version="12.32.0" />
     <PackageReference Include="essentialMix.Newtonsoft" Version="12.32.0" />
+	<PackageReference Include="IdentityServer4" Version="4.1.2" />
     <PackageReference Include="JetBrains.Annotations" Version="2021.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.12" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />

@@ -7,22 +7,22 @@ using Swashbuckle.AspNetCore.Filters;
 
 namespace MongoPOC.Data.Swagger.Examples
 {
-	public class UserToRegisterExample : IExamplesProvider<UserToRegister>
+	public class UserToUpdateExample : IExamplesProvider<UserToUpdate>
 	{
 		private readonly UserFaker _faker;
 		private readonly IMapper _mapper;
 
-		public UserToRegisterExample([NotNull] IMapper mapper)
+		public UserToUpdateExample([NotNull] IMapper mapper)
 		{
 			_mapper = mapper;
 			_faker = new UserFaker();
 		}
 
 		/// <inheritdoc />
-		public UserToRegister GetExamples()
+		public UserToUpdate GetExamples()
 		{
 			User user = _faker.Generate();
-			return _mapper.Map<UserToRegister>(user);
+			return _mapper.Map<UserToUpdate>(user);
 		}
 	}
 }
