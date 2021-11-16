@@ -22,10 +22,13 @@ namespace MongoPOC.Data
 			IQueryable<Book> books = List();
 			return UserBooks.AsQueryable()
 							.Where(e => e.UserId == userId)
-							.SelectMany(e => books.Where(book => book.Value == e.BookId));
+							.SelectMany(e => books.Where(book => book.Id == e.BookId));
 		}
 
 		[NotNull]
 		protected IMongoCollection<UserBook> UserBooks => _userBooks ??= Context.UserBooks;
+
+		/// <inheritdoc />
+		protected override Guid GetKey(Book entity) { return Guid.NewGuid(); }
 	}
 }

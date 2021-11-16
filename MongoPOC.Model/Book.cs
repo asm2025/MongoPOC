@@ -10,7 +10,7 @@ namespace MongoPOC.Model
 	{
 		[BsonId]
 		[Key]
-		public Guid Value { get; set; }
+		public Guid Id { get; set; }
 
 		[BsonRequired]
 		[Required]

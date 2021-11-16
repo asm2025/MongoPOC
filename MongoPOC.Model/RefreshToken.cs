@@ -10,7 +10,7 @@ namespace MongoPOC.Model
 	{
 		[BsonId]
 		[StringLength(90)]
-		public string Value { get; set; }
+		public string Id { get; set; }
 		[BsonRequired]
 		public Guid UserId { get; set; }
 		public DateTime Created { get; set; }

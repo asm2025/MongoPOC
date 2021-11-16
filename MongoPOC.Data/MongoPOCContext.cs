@@ -154,7 +154,7 @@ namespace MongoPOC.Data
 			user.LastActive = DateTime.UtcNow;
 			await UserManager.UpdateAsync(user);
 			string accessToken = await GenerateToken(user);
-			return TokenSignInResult.SuccessFrom(user, accessToken, refreshToken.Value);
+			return TokenSignInResult.SuccessFrom(user, accessToken, refreshToken.Id);
 		}
 
 		/// <inheritdoc />
@@ -162,7 +162,7 @@ namespace MongoPOC.Data
 		{
 			if (string.IsNullOrEmpty(refreshToken)) return TokenSignInResult.NotAllowed;
 
-			IAsyncCursor<RefreshToken> cursor = await RefreshTokens.FindAsync(e => e.Value == refreshToken);
+			IAsyncCursor<RefreshToken> cursor = await RefreshTokens.FindAsync(e => e.Id == refreshToken);
 			if (cursor == null) return TokenSignInResult.NotAllowed;
 
 			RefreshToken token = await cursor.FirstOrDefaultAsync();
@@ -191,7 +191,7 @@ namespace MongoPOC.Data
 			await UserManager.UpdateAsync(user);
 
 			string accessToken = await GenerateToken(user);
-			return TokenSignInResult.SuccessFrom(user, accessToken, newRefreshToken.Value);
+			return TokenSignInResult.SuccessFrom(user, accessToken, newRefreshToken.Id);
 		}
 
 		/// <inheritdoc />
@@ -215,7 +215,7 @@ namespace MongoPOC.Data
 		{
 			if (string.IsNullOrEmpty(refreshToken)) return;
 	
-			IAsyncCursor<RefreshToken> cursor = await RefreshTokens.FindAsync(e => e.Value == refreshToken);
+			IAsyncCursor<RefreshToken> cursor = await RefreshTokens.FindAsync(e => e.Id == refreshToken);
 			if (cursor == null) return;
 
 			RefreshToken token = await cursor.FirstOrDefaultAsync();
@@ -330,7 +330,7 @@ namespace MongoPOC.Data
 				RNGRandomHelper.Default.GetNonZeroBytes(buffer);
 				refreshToken = new RefreshToken
 				{
-					Value = Convert.ToBase64String(buffer),
+					Id = Convert.ToBase64String(buffer),
 					UserId = user.Id,
 					Expires = DateTime.UtcNow.AddMinutes(GetRefreshTokenExpirationTime()),
 					Created = DateTime.UtcNow

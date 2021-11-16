@@ -47,7 +47,7 @@ namespace MongoPOC.API.Controllers
 			BookForList bookForList = _mapper.Map<BookForList>(book);
 			return CreatedAtAction(nameof(Get), new
 			{
-				id = book.Value
+				id = book.Id
 			}, bookForList);
 		}
 
@@ -117,7 +117,7 @@ namespace MongoPOC.API.Controllers
 		{
 			Book book = await _service.GetAsync(id);
 			if (book == null) return NotFound(id);
-			await _service.DeleteAsync(book.Value);
+			await _service.DeleteAsync(book.Id);
 			return Ok();
 		}
 	}

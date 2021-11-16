@@ -17,7 +17,7 @@ namespace MongoPOC.Data.Fakers
 		/// <inheritdoc />
 		public BookFaker()
 		{
-			base.RuleFor(e => e.Value, f => f.Random.Guid());
+			base.RuleFor(e => e.Id, f => f.Random.Guid());
 			base.RuleFor(e => e.Name, f => f.Lorem.Sentence(1, 6));
 			base.RuleFor(e => e.Author, f => f.Person.FullName);
 			base.RuleFor(e => e.Publisher, f => f.Company.CompanyName());
