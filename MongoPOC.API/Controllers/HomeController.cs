@@ -31,6 +31,7 @@ namespace MongoPOC.API.Controllers
 						: NotFound();
 		}
 
+		[ApiExplorerSettings(IgnoreApi = true)]
 		[Route("[action]/{id:int?}")]
 		[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 		public IActionResult Error(int? id)

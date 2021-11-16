@@ -1,28 +1,30 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoPOC.Model
 {
 	[Serializable]
-	public class Book : IEntity<string>
+	[BsonIgnoreExtraElements]
+	public class Book : IEntity<Guid>
 	{
 		[BsonId]
-		[BsonRepresentation(BsonType.ObjectId)]
 		[Key]
-		[StringLength(128)]
-		public string Id { get; set; }
+		public Guid Value { get; set; }
 
 		[BsonRequired]
+		[Required]
 		[StringLength(255)]
 		public string Name { get; set; }
 		
 		[BsonRequired]
+		[Required]
 		[StringLength(255)]
 		public string Author { get; set; }
+		
 		[StringLength(255)]
 		public string Publisher { get; set; }
+		
 		[StringLength(13)]
 		public string EAN { get; set; }
 		
@@ -31,6 +33,7 @@ namespace MongoPOC.Model
 
 		[StringLength(128)]
 		public string Category { get; set; }
+		
 		public decimal Price { get; set; }
 	}
 }

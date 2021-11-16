@@ -6,6 +6,6 @@ namespace MongoPOC.Model
 	public interface IEntity<T> : IEntity
 		where T : IComparable<T>, IEquatable<T>
 	{
-		T Id { get; set; }
+		T Value { get; set; }
 	}
 }

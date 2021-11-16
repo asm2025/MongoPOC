@@ -1,12 +1,13 @@
 using System;
-using System.Linq;
+using System.Security.Claims;
 using essentialMix.Core.Web.Middleware;
 using essentialMix.Extensions;
 using essentialMix.Helpers;
 using essentialMix.Newtonsoft.Helpers;
 using essentialMix.Newtonsoft.Serialization;
 using JetBrains.Annotations;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -17,14 +18,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MongoPOC.API.Extensions;
+using Microsoft.IdentityModel.Tokens;
 using MongoPOC.Data;
 using MongoPOC.Data.Settings;
 using MongoPOC.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Scrutor;
 using Swashbuckle.AspNetCore.Filters;
 using Serilog;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace MongoPOC.API
 {
@@ -36,10 +39,14 @@ namespace MongoPOC.API
 		[NotNull]
 		private readonly IConfiguration _configuration;
 
-		public Startup([NotNull] IHostEnvironment environment, [NotNull] IConfiguration configuration)
+		[NotNull]
+		private readonly ILogger _logger;
+
+		public Startup([NotNull] IHostEnvironment environment, [NotNull] IConfiguration configuration, [NotNull] ILogger<Startup> logger)
 		{
 			_environment = environment;
 			_configuration = configuration;
+			_logger = logger;
 		}
 
 		// This method gets called by the runtime. Use this method to add services to the container.
@@ -47,14 +54,12 @@ namespace MongoPOC.API
 		{
 			string[] allowedClients = _configuration.GetSection("allowedClients").Get<string[]>();
 			MongoDbConfig dbConfig = _configuration.GetSection("data").Get<MongoDbConfig>();
-			IdentityServerSettings identityServerSettings = _configuration.GetSection("IdentityServer").Get<IdentityServerSettings>();
 
 			services
 				// config
 				.AddSingleton(_configuration)
 				.AddSingleton(_environment)
 				.AddSingleton<IDbConfig>(dbConfig)
-				.AddSingleton<IIdentityServerSettings>(identityServerSettings)
 				// logging
 				.AddLogging(config =>
 				{
@@ -68,9 +73,7 @@ namespace MongoPOC.API
 				.AddSwaggerGen(options =>
 				{
 					options.Setup(_configuration, _environment)
-							.AddOpenIdConnectSecurity(identityServerSettings.AuthorizationUrl, 
-													identityServerSettings.TokenUrl, 
-													identityServerSettings.ApiScopes.ToDictionary(e => e.Name, e => e.Description));
+							.AddJwtBearerSecurity();
 					//options.OperationFilter<FormFileFilter>();
 					options.ExampleFilters();
 				})
@@ -93,12 +96,28 @@ namespace MongoPOC.API
 				.AddHttpContextAccessor()
 				// Mapper
 				.AddAutoMapper((_, builder) => builder.AddProfile(new AutoMapperProfiles()), new[] { typeof(AutoMapperProfiles).Assembly }, ServiceLifetime.Singleton)
-				// Database
-				.AddIdentity<User, Role>(options =>
+				// Identity & Database
+				.AddIdentityCore<User>(options =>
 				{
+					options.Password.RequireDigit = true;
+					options.Password.RequireUppercase = true;
+					options.Password.RequireLowercase = true;
+					options.Password.RequireNonAlphanumeric = true;
+					options.Password.RequiredLength = 6;
+
+					options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+					options.Lockout.MaxFailedAccessAttempts = 5;
+					options.Lockout.AllowedForNewUsers = true;
+
+					options.SignIn.RequireConfirmedAccount = false;
+					options.SignIn.RequireConfirmedEmail = false;
+					options.SignIn.RequireConfirmedPhoneNumber = false;
+
 					options.Stores.MaxLengthForKeys = 128;
+
 					options.User.RequireUniqueEmail = true;
 				})
+				.AddRoles<Role>()
 				.AddMongoDbStores<User, Role, Guid>(dbConfig.ConnectionString, dbConfig.Database)
 				.AddUserManager<UserManager<User>>()
 				.AddRoleManager<RoleManager<Role>>()
@@ -107,51 +126,61 @@ namespace MongoPOC.API
 				.AddDefaultTokenProviders();
 			services
 				.AddScoped<IMongoPOCContext, MongoPOCContext>()
-				.AddScoped<BookService>()
-				// Identity
-				.AddIdentityServer(options =>
+				// using Scrutor
+				.Scan(scan =>
 				{
-					options.Events.RaiseErrorEvents = true;
-					options.Events.RaiseFailureEvents = true;
-					options.Events.RaiseInformationEvents = true;
-					options.Events.RaiseSuccessEvents = true;
-				})
-				.AddAspNetIdentity<User>()
-				.AddInMemoryPersistedGrants()
-				.AddInMemoryApiScopes(identityServerSettings.ApiScopes)
-				.AddInMemoryApiResources(identityServerSettings.ApiResources)
-				.AddInMemoryIdentityResources(identityServerSettings.IdentityResources)
-				.AddInMemoryClients(identityServerSettings.Clients)
-				.AddDeveloperSigningCredential();
+					// Add all repositories
+					scan.FromAssemblyOf<IDbConfig>()
+						.AddClasses(cls => cls.AssignableTo(typeof(MongoDbService<,>)))
+						.UsingRegistrationStrategy(RegistrationStrategy.Skip)
+						.AsSelf()
+						.WithScopedLifetime();
+				});
 
 			// Authentication
 			services
-				.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+				// Jwt Bearer
+				.AddJwtBearerAuthentication()
 				.AddCookie(options =>
 				{
 					options.SlidingExpiration = true;
-					options.LoginPath = "/connect/authorize";
-					options.LogoutPath = "/connect/logout";
-					options.ExpireTimeSpan = TimeSpan.FromMinutes(identityServerSettings.Timeout);
+					options.LoginPath = "/users/login";
+					options.LogoutPath = "/users/logout";
+					options.ExpireTimeSpan = TimeSpan.FromMinutes(_configuration.GetValue("jwt:timeout", 20).NotBelow(5));
 				})
-				.AddIdentityServerAuthentication(OpenIdConnectDefaults.AuthenticationScheme, option =>
+				.AddJwtBearerOptions(options =>
 				{
-					option.ApiName = "api";
-					option.Authority = identityServerSettings.Authority;
-					option.ApiSecret = "endc@m+Y8hZCW&MAEEb5RY2?AeE75d3?";
+					SecurityKey signingKey = SecurityKeyHelper.CreateSymmetricKey(_configuration.GetValue<string>("jwt:signingKey"), 256);
+					//SecurityKey decryptionKey = SecurityKeyHelper.CreateSymmetricKey(_configuration.GetValue<string>("jwt:encryptionKey"), 256);
+					options.Setup(signingKey, /*decryptionKey, */_configuration, _environment.IsDevelopment());
+				});
+			
+			// Authorization
+			services
+				.AddAuthorization(options =>
+				{
+					options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+											.RequireAuthenticatedUser()
+											.RequireClaim(ClaimTypes.Role, Role.Roles)
+											.Build();
+
+					options.AddPolicy(Role.Members, policy =>
+					{
+						policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+							.RequireAuthenticatedUser()
+							.RequireClaim(ClaimTypes.Role, Role.Members)
+							.RequireRole(Role.Members);
+					});
+
+					options.AddPolicy(Role.Administrators, policy =>
+					{
+						policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+							.RequireAuthenticatedUser()
+							.RequireClaim(ClaimTypes.Role, Role.Administrators)
+							.RequireRole(Role.Administrators);
+					});
 				});
 
-			// Authorization
-			services.AddAuthorization(options =>
-			{
-				options.AddPolicy("Deactivate", policy =>
-				{
-					policy.RequireRole("Admin Manager");
-					policy.RequireAuthenticatedUser();
-					policy.RequireClaim("email");
-				});
-			});
-			
 			// MVC
 			services
 				.AddDefaultCorsPolicy(builder => builder.WithExposedHeaders("Set-Cookie"), allowedClients)
@@ -174,7 +203,9 @@ namespace MongoPOC.API
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
 		public void Configure([NotNull] IApplicationBuilder app, [NotNull] IWebHostEnvironment env)
 		{
-			app.UseExceptionHandler("/error");
+			if (env.IsDevelopment()) app.UseDefaultExceptionDelegate(_logger);
+			else app.UseRedirectWithStatusCode("/error/{0}");
+
 			if (!env.IsDevelopment() || _configuration.GetValue<bool>("useSSL")) app.UseHsts();
 			app.UseHttpsRedirection()
 				.UseForwardedHeaders()
@@ -187,7 +218,6 @@ namespace MongoPOC.API
 					.UseSwaggerUI(options =>
 					{
 						options.SwaggerEndpoint(_configuration.GetValue<string>("swagger:ui"), _configuration.GetValue("title", _environment.ApplicationName));
-						options.OAuthUsePkce();
 						options.AsStartPage();
 					});
 			}
@@ -197,16 +227,20 @@ namespace MongoPOC.API
 					MinimumSameSitePolicy = SameSiteMode.None,
 					Secure = CookieSecurePolicy.SameAsRequest
 				})
+				.UseDefaultFiles()
 				.UseStaticFiles(new StaticFileOptions
 				{
 					FileProvider = new PhysicalFileProvider(AssemblyHelper.GetEntryAssembly().GetDirectoryPath())
 				})
+				.UseCookiePolicy(new CookiePolicyOptions
+				{
+					MinimumSameSitePolicy = SameSiteMode.None,
+					Secure = CookieSecurePolicy.SameAsRequest
+				})
 				.UseRouting()
 				.UseCors()
-				.UseIdentityServer()
 				.UseAuthentication()
 				.UseAuthorization()
-				.UseDefaultFiles()
 				.UseEndpoints(endpoints =>
 				{
 					endpoints.MapControllers();

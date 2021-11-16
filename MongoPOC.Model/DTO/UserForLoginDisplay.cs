@@ -7,13 +7,12 @@ namespace MongoPOC.Model.DTO
 	[Serializable]
 	public class UserForLoginDisplay
 	{
-		public string Id { get; set; }
+		public Guid Id { get; set; }
 		public string UserName { get; set; }
 		public string Email { get; set; }
 		public string KnownAs { get; set; }
 		public Genders Gender { get; set; }
 		public DateTime DateOfBirth { get; set; }
-		public double Age { get; set; }
 		public string City { get; set; }
 		public DateTime Created { get; set; }
 		public DateTime LastActive { get; set; }

@@ -10,6 +10,5 @@ namespace MongoPOC.Model.DTO
 	public class RoleForList
 	{
 		public string Name { get; set; }
-		public IEnumerable<MongoClaim> Claims { get; set; }
 	}
 }

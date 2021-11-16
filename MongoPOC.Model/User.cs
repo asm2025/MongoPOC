@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using AspNetCore.Identity.MongoDbCore.Models;
 using essentialMix.Extensions;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDbGenericRepository.Attributes;
 
 namespace MongoPOC.Model
@@ -36,6 +37,7 @@ namespace MongoPOC.Model
 		{
 		}
 
+		[BsonRequired]
 		[Required]
 		[StringLength(255)]
 		public string FirstName
@@ -44,6 +46,7 @@ namespace MongoPOC.Model
 			set => _firstName = value.ToNullIfEmpty();
 		}
 
+		[BsonRequired]
 		[Required]
 		[StringLength(255)]
 		public string LastName
@@ -60,14 +63,19 @@ namespace MongoPOC.Model
 		}
 
 		public Genders Gender { get; set; }
-        public DateTime BirthDate { get; set; }
         
+		[Required]
+		public DateTime BirthDate { get; set; }
+        
+		[Required]
         [StringLength(255)]
 		public string City { get; set; }
         
         [StringLength(255)]
 		public string Country { get; set; }
-        public DateTime UpdatedOn { get; set; }
+        
+		public DateTime UpdatedOn { get; set; }
+
         public DateTime LastActive { get; set; }
 	}
 }

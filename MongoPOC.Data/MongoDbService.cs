@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -12,26 +13,22 @@ namespace MongoPOC.Data
 		where T : IEntity<TKey>
 		where TKey : IComparable<TKey>, IEquatable<TKey>
 	{
-		protected MongoDbService([NotNull] IMongoCollection<T> collection)
+		protected MongoDbService([NotNull] IMongoPOCContext context, [NotNull] Func<IMongoPOCContext, IMongoCollection<T>> getCollection)
 		{
-			Collection = collection;
+			Context = context;
+			Collection = getCollection(context);
 		}
 
 		[NotNull]
-		public IFindFluent<T, T> Get() { return Get(e => true); }
+		public IQueryable<T> List() { return Collection.AsQueryable(); }
+
 		[NotNull]
-		public IFindFluent<T, T> Get([NotNull] Expression<Func<T, bool>> filter) { return Collection.Find(filter); }
-		[NotNull]
-		public T Get([NotNull] TKey id) { return Collection.Find(e => id.Equals(e.Id)).FirstOrDefault(); }
+		public T Get([NotNull] TKey id) { return Collection.Find(e => id.Equals(e.Value)).FirstOrDefault(); }
 		
-		[NotNull]
-		public Task<IAsyncCursor<T>> GetAsync() { return GetAsync(e => true); }
-		[NotNull]
-		public Task<IAsyncCursor<T>> GetAsync([NotNull] Expression<Func<T, bool>> filter) { return Collection.FindAsync(filter); }
 		[NotNull]
 		public async Task<T> GetAsync([NotNull] TKey id)
 		{
-			IAsyncCursor<T> cursor = await Collection.FindAsync(e => id.Equals(e.Id));
+			IAsyncCursor<T> cursor = await Collection.FindAsync(e => id.Equals(e.Value));
 			return cursor == null
 						? default(T)
 						: await cursor.FirstOrDefaultAsync();
@@ -65,18 +62,18 @@ namespace MongoPOC.Data
 
 		public void Update([NotNull] TKey id, [NotNull] T item)
 		{
-			Collection.ReplaceOne(e => id.Equals(e.Id), item);
+			Collection.ReplaceOne(e => id.Equals(e.Value), item);
 		}
 
 		[NotNull]
 		public Task UpdateAsync([NotNull] TKey id, [NotNull] T item)
 		{
-			return Collection.ReplaceOneAsync(e => id.Equals(e.Id), item);
+			return Collection.ReplaceOneAsync(e => id.Equals(e.Value), item);
 		}
 
 		public void Delete([NotNull] TKey id)
 		{
-			Collection.DeleteOne(e => id.Equals(e.Id));
+			Collection.DeleteOne(e => id.Equals(e.Value));
 		}
 
 		public void Delete([NotNull] Expression<Func<T, bool>> filter)
@@ -87,7 +84,7 @@ namespace MongoPOC.Data
 		[NotNull]
 		public Task DeleteAsync([NotNull] TKey id)
 		{
-			return Collection.DeleteOneAsync(e => id.Equals(e.Id));
+			return Collection.DeleteOneAsync(e => id.Equals(e.Value));
 		}
 
 		[NotNull]
@@ -95,6 +92,9 @@ namespace MongoPOC.Data
 		{
 			return Collection.DeleteManyAsync(filter);
 		}
+
+		[NotNull]
+		public IMongoPOCContext Context { get; }
 
 		[NotNull]
 		protected IMongoCollection<T> Collection { get; }

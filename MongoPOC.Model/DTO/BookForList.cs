@@ -7,7 +7,7 @@ namespace MongoPOC.Model.DTO
 	[DebuggerDisplay("{Name}")]
 	public class BookForList
 	{
-		public string Id { get; set; }
+		public Guid Id { get; set; }
 		public string Name { get; set; }
 		public string Author { get; set; }
 		public string EAN { get; set; }

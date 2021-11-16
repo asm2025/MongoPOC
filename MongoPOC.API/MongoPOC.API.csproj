@@ -11,20 +11,16 @@
 		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
 		<PackageReference Include="essentialMix" Version="12.32.0" />
 		<PackageReference Include="essentialMix.Core.Authentication.JwtBearer" Version="12.32.0" />
-		<PackageReference Include="essentialMix.Core.Swagger" Version="12.32.0" />
 		<PackageReference Include="essentialMix.Core.Web" Version="12.32.0" />
+		<PackageReference Include="essentialMix.Core.Swagger" Version="12.32.0" />
 		<PackageReference Include="essentialMix.Data" Version="12.32.0" />
 		<PackageReference Include="essentialMix.Extensions.Configuration" Version="12.32.0" />
 		<PackageReference Include="essentialMix.Logging" Version="12.32.0" />
 		<PackageReference Include="essentialMix.Newtonsoft" Version="12.32.0" />
-		<PackageReference Include="IdentityServer4" Version="4.1.2" />
-		<PackageReference Include="IdentityServer4.AccessTokenValidation" Version="3.0.1" />
-		<PackageReference Include="IdentityServer4.AspNetIdentity" Version="4.1.2" />
 		<PackageReference Include="JetBrains.Annotations" Version="2021.3.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="5.0.12" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.9" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.12" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="5.0.12" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.12" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.12" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.11.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
@@ -42,11 +38,11 @@
 		<PackageReference Include="Serilog.Settings.Configuration" Version="3.3.0" />
 		<PackageReference Include="Serilog.Sinks.Console" Version="4.0.0" />
 		<PackageReference Include="Serilog.Sinks.Debug" Version="2.0.0" />
-		<PackageReference Include="Serilog.Sinks.Email" Version="2.4.0" />
 		<PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
 		<PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.2.3" />
 		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="7.0.2" />
+		<PackageReference Include="System.Linq.Async" Version="5.0.0" />
 		<PackageReference Include="System.Management" Version="5.0.0" />
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
 	</ItemGroup>

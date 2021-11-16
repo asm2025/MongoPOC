@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,12 +7,12 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using essentialMix.Core.Web.Controllers;
 using essentialMix.Extensions;
+using essentialMix.Patterns.Pagination;
 using JetBrains.Annotations;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoPOC.Data;
@@ -20,8 +21,8 @@ using MongoPOC.Model.DTO;
 
 namespace MongoPOC.API.Controllers
 {
-	[Authorize(AuthenticationSchemes = OpenIdConnectDefaults.AuthenticationScheme)]
 	[Route("[controller]")]
+	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 	public class RolesController : ApiController
 	{
 		private readonly RoleManager<Role> _roleManager;
@@ -36,9 +37,9 @@ namespace MongoPOC.API.Controllers
 		}
 
 		[HttpPost("[action]")]
+		[Authorize(Roles = Role.Administrators)]
 		public async Task<IActionResult> Create([Required][NotNull] string name)
 		{
-			if (!User.IsInRole(Role.Administrators)) return Unauthorized();
 			if (!ModelState.IsValid) return ValidationProblem();
 			if (name.IsSame(Role.Administrators) || name.IsSame(Role.Members)) return Ok();
 
@@ -61,38 +62,41 @@ namespace MongoPOC.API.Controllers
 		}
 
 		[HttpGet]
-		public async Task<IActionResult> Get()
+		public IActionResult List([FromQuery] Pagination pagination)
 		{
-			if (!User.IsInRole(Role.Administrators)) return Unauthorized();
-
 			IQueryable<Role> queryable = _roleManager.Roles;
-			if (queryable == null) return NoContent();
-			
-			IList<RoleForList> roles = await queryable.ProjectTo<RoleForList>(_mapper.ConfigurationProvider)
-													.ToListAsync();
+		
+			if (pagination != null)
+			{
+				queryable = queryable.Skip((pagination.Page - 1) * pagination.PageSize)
+									.Take(pagination.PageSize);
+			}
+
+			IList<RoleForList> roles = queryable.ProjectTo<RoleForList>(_mapper.ConfigurationProvider)
+													.ToList();
 			return Ok(roles);
 		}
 
-		[HttpGet("{id:length(128)}")]
-		public async Task<IActionResult> Get([FromRoute] string id)
+		[HttpGet("{id:guid}")]
+		public async Task<IActionResult> Get([FromRoute] Guid id)
 		{
-			if (string.IsNullOrEmpty(id)) return BadRequest();
+			if (id.IsEmpty()) return BadRequest();
 		
-			Role role = await _roleManager.FindByIdAsync(id);
+			Role role = await _roleManager.FindByIdAsync(id.ToHexString());
 			if (role == null) return NotFound(id);
 			
 			RoleForList roleForList = _mapper.Map<RoleForList>(role);
 			return Ok(roleForList);
 		}
 
-		[HttpPut("[action]/{id:length(128)}")]
-		public async Task<IActionResult> Update([FromRoute] string id, [Required][NotNull] string name)
+		[HttpPut("{id:guid}/[action]")]
+		[Authorize(Roles = Role.Administrators)]
+		public async Task<IActionResult> Update([FromRoute] Guid id, [Required][NotNull] string name)
 		{
-			if (!User.IsInRole(Role.Administrators)) return Unauthorized();
 			if (!ModelState.IsValid) return ValidationProblem();
-			if (string.IsNullOrEmpty(id) || string.IsNullOrWhiteSpace(name)) return BadRequest();
+			if (id.IsEmpty() || string.IsNullOrWhiteSpace(name)) return BadRequest();
 
-			Role role = await _roleManager.FindByIdAsync(id);
+			Role role = await _roleManager.FindByIdAsync(id.ToHexString());
 			if (role == null) return NotFound(id);
 			if (role.Name.IsSame(Role.Administrators) || role.Name.IsSame(Role.Members)) return Unauthorized();
 			role.Name = name;
@@ -106,13 +110,13 @@ namespace MongoPOC.API.Controllers
 			return ValidationProblem();
 		}
 
-		[HttpDelete("[action]/{id:length(128)}")]
-		public async Task<IActionResult> Delete([FromRoute] string id)
+		[HttpDelete("{id:guid}/[action]")]
+		[Authorize(Roles = Role.Administrators)]
+		public async Task<IActionResult> Delete([FromRoute] Guid id)
 		{
-			if (!User.IsInRole(Role.Administrators)) return Unauthorized();
-			if (string.IsNullOrEmpty(id)) return BadRequest();
+			if (id.IsEmpty()) return BadRequest();
 
-			Role role = await _roleManager.FindByIdAsync(id);
+			Role role = await _roleManager.FindByIdAsync(id.ToHexString());
 			if (role == null) return NotFound(id);
 			if (role.Name.IsSame(Role.Administrators) || role.Name.IsSame(Role.Members)) return Unauthorized();
 			
