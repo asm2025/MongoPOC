@@ -9,7 +9,6 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
@@ -190,6 +189,7 @@ namespace MongoPOC.API
 				.AddNewtonsoftJson(options =>
 				{
 					JsonHelper.SetDefaults(options.SerializerSettings, contractResolver: new CamelCasePropertyNamesContractResolver());
+					options.SerializerSettings.NullValueHandling = NullValueHandling.Include;
 					options.SerializerSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat;
 
 					JsonSerializerSettingsConverters allConverters = EnumHelper<JsonSerializerSettingsConverters>.GetAllFlags() &
@@ -201,18 +201,19 @@ namespace MongoPOC.API
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-		public void Configure([NotNull] IApplicationBuilder app, [NotNull] IWebHostEnvironment env)
+		public void Configure([NotNull] IApplicationBuilder app)
 		{
-			if (env.IsDevelopment()) app.UseDefaultExceptionDelegate(_logger);
+			if (_environment.IsDevelopment()) app.UseDefaultExceptionDelegate(_logger);
 			else app.UseRedirectWithStatusCode("/error/{0}");
 
-			if (!env.IsDevelopment() || _configuration.GetValue<bool>("useSSL")) app.UseHsts();
-			app.UseHttpsRedirection()
+			if (!_environment.IsDevelopment() || _configuration.GetValue<bool>("useSSL")) app.UseHsts();
+			app
+				.UseHttpsRedirection()
 				.UseForwardedHeaders()
 				.UseCultureHandler()
 				.UseSerilogRequestLogging();
 
-			if (env.IsDevelopment())
+			if (_environment.IsDevelopment())
 			{
 				app.UseSwagger(options => options.RouteTemplate = _configuration.GetValue<string>("swagger:template"))
 					.UseSwaggerUI(options =>
@@ -230,12 +231,7 @@ namespace MongoPOC.API
 				.UseDefaultFiles()
 				.UseStaticFiles(new StaticFileOptions
 				{
-					FileProvider = new PhysicalFileProvider(AssemblyHelper.GetEntryAssembly().GetDirectoryPath())
-				})
-				.UseCookiePolicy(new CookiePolicyOptions
-				{
-					MinimumSameSitePolicy = SameSiteMode.None,
-					Secure = CookieSecurePolicy.SameAsRequest
+					FileProvider = new PhysicalFileProvider(_environment.ContentRootPath)
 				})
 				.UseRouting()
 				.UseCors()

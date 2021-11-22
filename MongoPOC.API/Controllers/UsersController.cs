@@ -205,6 +205,27 @@ namespace MongoPOC.API.Controllers
 
 		[AllowAnonymous]
 		[HttpPost("[action]")]
+		public async Task<IActionResult> RefreshToken()
+		{
+			if (User.Identity is not {IsAuthenticated: true}) return NoContent();
+
+			string refreshToken = Request.Cookies[REFRESH_TOKEN_NAME];
+			if (string.IsNullOrEmpty(refreshToken)) return NoContent();
+
+			TokenSignInResult result = await _context.RefreshTokenAsync(refreshToken);
+			if (!result.Succeeded) return NoContent();
+			
+			UserForLoginDisplay userForLoginDisplay = _mapper.Map<UserForLoginDisplay>(result.User);
+			SetTokenCookie(result.RefreshToken);
+			return Ok(new
+			{
+				token = result.Token,
+				user = userForLoginDisplay
+			});
+		}
+
+		[AllowAnonymous]
+		[HttpPost("[action]")]
 		public async Task<IActionResult> Logout([FromBody] string revokeToken)
 		{
 			if (User.Identity is not {IsAuthenticated: true}) return NoContent();

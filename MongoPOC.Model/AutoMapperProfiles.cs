@@ -14,7 +14,9 @@ namespace MongoPOC.Model
 			CreateMap<BookToAdd, Book>().ReverseMap();
 			CreateMap<Book, BookForList>();
 
-			CreateMap<UserToRegister, User>().ReverseMap();
+			CreateMap<UserToRegister, User>()
+				.ReverseMap()
+				.ForMember(e => e.Password, opt => opt.MapFrom(_ => string.Empty));
 			CreateMap<UserToUpdate, User>().ReverseMap();
 			CreateMap<User, UserForLoginDisplay>();
 			CreateMap<User, UserForList>()
