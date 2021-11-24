@@ -179,7 +179,6 @@ namespace MongoPOC.IS
 				.AddNewtonsoftJson(options =>
 				{
 					JsonHelper.SetDefaults(options.SerializerSettings, contractResolver: new CamelCasePropertyNamesContractResolver());
-					options.SerializerSettings.NullValueHandling = NullValueHandling.Include;
 					options.SerializerSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat;
 
 					JsonSerializerSettingsConverters allConverters = EnumHelper<JsonSerializerSettingsConverters>.GetAllFlags() &

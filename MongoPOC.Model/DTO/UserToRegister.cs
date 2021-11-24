@@ -16,6 +16,7 @@ namespace MongoPOC.Model.DTO
 		
 		[Required]
 		[StringLength(32, MinimumLength = 6)]
+		[DataType(DataType.Password)]
 		public string Password { get; set; }
 		
 		[Required]
