@@ -19,106 +19,111 @@ using MongoPOC.Model;
 using MongoPOC.Model.DTO;
 using Swashbuckle.AspNetCore.Annotations;
 
-namespace MongoPOC.API.Controllers
+namespace MongoPOC.API.Controllers;
+
+[Route("[controller]")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+public class BooksController : ApiController
 {
-	[Route("[controller]")]
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	public class BooksController : ApiController
+	private readonly BookService _service;
+	private readonly IMapper _mapper;
+
+	/// <inheritdoc />
+	public BooksController([NotNull] BookService service, [NotNull] IMapper mapper, [NotNull] IConfiguration configuration, [NotNull] ILogger<BooksController> logger)
+		: base(configuration, logger)
 	{
-		private readonly BookService _service;
-		private readonly IMapper _mapper;
+		_service = service;
+		_mapper = mapper;
+	}
 
-		/// <inheritdoc />
-		public BooksController([NotNull] BookService service, [NotNull] IMapper mapper, [NotNull] IConfiguration configuration, [NotNull] ILogger<BooksController> logger)
-			: base(configuration, logger)
+	[HttpPost("[action]")]
+	[SwaggerResponse((int)HttpStatusCode.Created)]
+	[Authorize(Roles = Role.Administrators)]
+	[ItemNotNull]
+	public async Task<IActionResult> Create([FromBody][NotNull] BookToAdd bookToAdd)
+	{
+		if (!ModelState.IsValid) return ValidationProblem();
+
+		Book book = await _service.AddAsync(_mapper.Map<Book>(bookToAdd));
+		BookForList bookForList = _mapper.Map<BookForList>(book);
+		return CreatedAtAction(nameof(Get), new
 		{
-			_service = service;
-			_mapper = mapper;
+			id = book.Id
+		}, bookForList);
+	}
+
+	[HttpGet]
+	[NotNull]
+	public IActionResult List([FromQuery] Pagination pagination)
+	{
+		IQueryable<Book> queryable = _service.List();
+
+		if (pagination != null)
+		{
+			queryable = queryable.Skip((pagination.Page - 1) * pagination.PageSize)
+								.Take(pagination.PageSize);
 		}
 
-		[HttpPost("[action]")]
-		[SwaggerResponse((int)HttpStatusCode.Created)]
-		[Authorize(Roles = Role.Administrators)]
-		public async Task<IActionResult> Create([FromBody][NotNull] BookToAdd bookToAdd)
-		{
-			if (!ModelState.IsValid) return ValidationProblem();
+		IList<BookForList> books = queryable
+									.ProjectTo<BookForList>(_mapper.ConfigurationProvider)
+									.ToList();
+		return Ok(books);
+	}
 
-			Book book = await _service.AddAsync(_mapper.Map<Book>(bookToAdd));
-			BookForList bookForList = _mapper.Map<BookForList>(book);
-			return CreatedAtAction(nameof(Get), new
-			{
-				id = book.Id
-			}, bookForList);
-		}
+	[HttpGet("{id:guid}")]
+	[SwaggerResponse((int)HttpStatusCode.NotFound)]
+	[ItemNotNull]
+	public async Task<IActionResult> Get([FromRoute] Guid id)
+	{
+		Book book = await _service.GetAsync(id);
+		return book == null
+					? NotFound(id)
+					: Ok(book);
+	}
 
-		[HttpGet]
-		public IActionResult List([FromQuery] Pagination pagination)
-		{
-			IQueryable<Book> queryable = _service.List();
+	[HttpGet("{id:guid}/[action]")]
+	[SwaggerResponse((int)HttpStatusCode.BadRequest)]
+	[SwaggerResponse((int)HttpStatusCode.Unauthorized)]
+	[SwaggerResponse((int)HttpStatusCode.NotFound)]
+	[Authorize(Roles = Role.Administrators)]
+	[ItemNotNull]
+	public async Task<IActionResult> Edit([FromRoute] Guid id)
+	{
+		if (id.IsEmpty()) return BadRequest();
 
-			if (pagination != null)
-			{
-				queryable = queryable.Skip((pagination.Page - 1) * pagination.PageSize)
-									.Take(pagination.PageSize);
-			}
+		Book book = await _service.GetAsync(id);
+		if (book == null) return NotFound(id);
 
-			IList<BookForList> books = queryable
-											.ProjectTo<BookForList>(_mapper.ConfigurationProvider)
-											.ToList();
-			return Ok(books);
-		}
+		BookToAdd bookToAdd = _mapper.Map<BookToAdd>(book);
+		return Ok(bookToAdd);
+	}
 
-		[HttpGet("{id:guid}")]
-		[SwaggerResponse((int)HttpStatusCode.NotFound)]
-		public async Task<IActionResult> Get([FromRoute] Guid id)
-		{
-			Book book = await _service.GetAsync(id);
-			return book == null
-						? NotFound(id)
-						: Ok(book);
-		}
+	[HttpPut("{id:guid}/[action]")]
+	[SwaggerResponse((int)HttpStatusCode.BadRequest)]
+	[SwaggerResponse((int)HttpStatusCode.NotFound)]
+	[Authorize(Roles = Role.Administrators)]
+	[ItemNotNull]
+	public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody][NotNull] BookToAdd bookToAdd)
+	{
+		if (!ModelState.IsValid) return ValidationProblem();
 
-		[HttpGet("{id:guid}/[action]")]
-		[SwaggerResponse((int)HttpStatusCode.BadRequest)]
-		[SwaggerResponse((int)HttpStatusCode.Unauthorized)]
-		[SwaggerResponse((int)HttpStatusCode.NotFound)]
-		[Authorize(Roles = Role.Administrators)]
-		public async Task<IActionResult> Edit([FromRoute] Guid id)
-		{
-			if (id.IsEmpty()) return BadRequest();
-			
-			Book book = await _service.GetAsync(id);
-			if (book == null) return NotFound(id);
-			
-			BookToAdd bookToAdd = _mapper.Map<BookToAdd>(book);
-			return Ok(bookToAdd);
-		}
+		Book book = await _service.GetAsync(id);
+		if (book == null) return NotFound(id);
+		_mapper.Map(bookToAdd, book);
+		await _service.UpdateAsync(id, book);
+		return Ok(book);
+	}
 
-		[HttpPut("{id:guid}/[action]")]
-		[SwaggerResponse((int)HttpStatusCode.BadRequest)]
-		[SwaggerResponse((int)HttpStatusCode.NotFound)]
-		[Authorize(Roles = Role.Administrators)]
-		public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody][NotNull] BookToAdd bookToAdd)
-		{
-			if (!ModelState.IsValid) return ValidationProblem();
-
-			Book book = await _service.GetAsync(id);
-			if (book == null) return NotFound(id);
-			_mapper.Map(bookToAdd, book);
-			await _service.UpdateAsync(id, book);
-			return Ok(book);
-		}
-
-		[HttpDelete("{id:guid}/[action]")]
-		[SwaggerResponse((int)HttpStatusCode.BadRequest)]
-		[SwaggerResponse((int)HttpStatusCode.NotFound)]
-		[Authorize(Roles = Role.Administrators)]
-		public async Task<IActionResult> Delete([FromRoute] Guid id)
-		{
-			Book book = await _service.GetAsync(id);
-			if (book == null) return NotFound(id);
-			await _service.DeleteAsync(book.Id);
-			return Ok();
-		}
+	[HttpDelete("{id:guid}/[action]")]
+	[SwaggerResponse((int)HttpStatusCode.BadRequest)]
+	[SwaggerResponse((int)HttpStatusCode.NotFound)]
+	[Authorize(Roles = Role.Administrators)]
+	[ItemNotNull]
+	public async Task<IActionResult> Delete([FromRoute] Guid id)
+	{
+		Book book = await _service.GetAsync(id);
+		if (book == null) return NotFound(id);
+		await _service.DeleteAsync(book.Id);
+		return Ok();
 	}
 }

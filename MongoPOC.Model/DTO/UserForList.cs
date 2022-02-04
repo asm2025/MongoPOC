@@ -1,13 +1,12 @@
 using System;
 using System.Diagnostics;
 
-namespace MongoPOC.Model.DTO
+namespace MongoPOC.Model.DTO;
+
+[Serializable]
+[DebuggerDisplay("[{KnownAs}] {FirstName} {LastName}")]
+public class UserForList : UserForLoginDisplay
 {
-	[Serializable]
-	[DebuggerDisplay("[{KnownAs}] {FirstName} {LastName}")]
-	public class UserForList : UserForLoginDisplay
-	{
-		public string FirstName { get; set; }
-		public string LastName { get; set; }
-	}
+	public string FirstName { get; set; }
+	public string LastName { get; set; }
 }

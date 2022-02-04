@@ -1,10 +1,9 @@
 using System;
 
-namespace MongoPOC.Model.DTO
+namespace MongoPOC.Model.DTO;
+
+[Serializable]
+public class UserForSerialization : UserForList
 {
-	[Serializable]
-	public class UserForSerialization : UserForList
-	{
-		public DateTime Modified { get; set; }
-	}
+	public DateTime Modified { get; set; }
 }

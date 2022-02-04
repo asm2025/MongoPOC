@@ -1,9 +1,8 @@
-namespace MongoPOC.Model
+namespace MongoPOC.Model;
+
+public enum Genders
 {
-	public enum Genders
-	{
-		Unspecified,
-		Male,
-		Female
-	}
+	Unspecified,
+	Male,
+	Female
 }

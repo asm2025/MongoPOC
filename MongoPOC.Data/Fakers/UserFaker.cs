@@ -6,63 +6,62 @@ using essentialMix.Helpers;
 using JetBrains.Annotations;
 using MongoPOC.Model;
 
-namespace MongoPOC.Data.Fakers
+namespace MongoPOC.Data.Fakers;
+
+public class UserFaker : Faker<User>
 {
-	public class UserFaker : Faker<User>
+	/// <inheritdoc />
+	public UserFaker()
 	{
-		/// <inheritdoc />
-		public UserFaker()
+		base.RuleFor(e => e.Id, f => f.Random.Guid());
+		base.RuleFor(e => e.Gender, () => (Genders)RNGRandomHelper.Next(1, 2));
+		base.RuleFor(e => e.FirstName, (f, e) =>
 		{
-			base.RuleFor(e => e.Id, f => f.Random.Guid());
-			base.RuleFor(e => e.Gender, () => (Genders)RNGRandomHelper.Next(1, 2));
-			base.RuleFor(e => e.FirstName, (f, e) =>
+			return e.Gender switch
 			{
-				return e.Gender switch
-				{
-					Genders.Male => f.Name.FirstName(Name.Gender.Male),
-					Genders.Female => f.Name.FirstName(Name.Gender.Female),
-					_ => f.Name.FirstName()
-				};
-			});
-			base.RuleFor(e => e.LastName, f => f.Person.LastName);
-			base.RuleFor(e => e.Email, (f, e) => f.Internet.ExampleEmail(e.FirstName, e.LastName));
-			base.RuleFor(e => e.Name, (_, e) => e.FirstName);
-			base.RuleFor(e => e.UserName, (f, e) => f.Internet.UserName(e.FirstName, e.LastName));
-			base.RuleFor(e => e.City, f => f.Address.City());
-			base.RuleFor(e => e.Country, f => f.Address.Country());
-			base.RuleFor(e => e.BirthDate, f => f.Date.Past(RandomHelper.Next(16, 60), DateTime.Now.AddYears(-18)));
-			base.RuleFor(e => e.LastActive, f => f.Date.Past());
-		}
+				Genders.Male => f.Name.FirstName(Name.Gender.Male),
+				Genders.Female => f.Name.FirstName(Name.Gender.Female),
+				_ => f.Name.FirstName()
+			};
+		});
+		base.RuleFor(e => e.LastName, f => f.Person.LastName);
+		base.RuleFor(e => e.Email, (f, e) => f.Internet.ExampleEmail(e.FirstName, e.LastName));
+		base.RuleFor(e => e.Name, (_, e) => e.FirstName);
+		base.RuleFor(e => e.UserName, (f, e) => f.Internet.UserName(e.FirstName, e.LastName));
+		base.RuleFor(e => e.City, f => f.Address.City());
+		base.RuleFor(e => e.Country, f => f.Address.Country());
+		base.RuleFor(e => e.BirthDate, f => f.Date.Past(RandomHelper.Next(16, 60), DateTime.Now.AddYears(-18)));
+		base.RuleFor(e => e.LastActive, f => f.Date.Past());
+	}
 
-		public int MaxSpecifiedGender { get; set; }
+	public int MaxSpecifiedGender { get; set; }
 
-		/// <inheritdoc />
-		[NotNull]
-		public override List<User> Generate(int count, string ruleSets = null)
-		{
-			List<User> users = base.Generate(count, ruleSets);
-			int maxGender = MaxSpecifiedGender;
-			if (maxGender <= 0 || users.Count <= maxGender) return users;
+	/// <inheritdoc />
+	[NotNull]
+	public override List<User> Generate(int count, string ruleSets = null)
+	{
+		List<User> users = base.Generate(count, ruleSets);
+		int maxGender = MaxSpecifiedGender;
+		if (maxGender <= 0 || users.Count <= maxGender) return users;
 	
-			int males = 0;
-			int females = 0;
+		int males = 0;
+		int females = 0;
 
-			foreach (User user in users)
+		foreach (User user in users)
+		{
+			switch (user.Gender)
 			{
-				switch (user.Gender)
-				{
-					case Genders.Male:
-						if (males == maxGender) user.Gender = Genders.Unspecified;
-						else males++;
-						break;
-					case Genders.Female:
-						if (females == maxGender) user.Gender = Genders.Unspecified;
-						else females++;
-						break;
-				}
+				case Genders.Male:
+					if (males == maxGender) user.Gender = Genders.Unspecified;
+					else males++;
+					break;
+				case Genders.Female:
+					if (females == maxGender) user.Gender = Genders.Unspecified;
+					else females++;
+					break;
 			}
-
-			return users;
 		}
+
+		return users;
 	}
 }
